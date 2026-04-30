@@ -1,0 +1,109 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      API_PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  proxy:
+    build:
+      context: .
+      dockerfile: apps/proxy/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PROXY_PORT: 4100
+      PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
+      ROUTER_BASE_URL: http://9router:20128
+      REDIS_URL: ${REDIS_URL}
+      DEMO_API_KEY: ${DEMO_API_KEY}
+    depends_on:
+      redis:
+        condition: service_healthy
+      9router:
+        condition: service_started
+
+  9router:
+    build:
+      context: .
+      dockerfile: infra/9router.Dockerfile
+      args:
+        NINE_ROUTER_VERSION: ${NINE_ROUTER_VERSION:-0.4.8}
+    restart: unless-stopped
+    expose:
+      - "20128"
+    volumes:
+      - 9router-data:/root/.9router
+    environment:
+      PORT: 20128
+      HOSTNAME: 0.0.0.0
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+      - proxy
+
+volumes:
+  postgres-data:
+  redis-data:
+  9router-data:
+  caddy-data:
+  caddy-config:

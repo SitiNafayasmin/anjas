@@ -1,0 +1,16 @@
+{$APP_DOMAIN} {
+  encode zstd gzip
+  reverse_proxy web:3000
+}
+
+{$API_DOMAIN} {
+  encode zstd gzip
+
+  @proxyApi path /v1/*
+  reverse_proxy @proxyApi proxy:4100
+
+  @businessApi path /health /plans /api-keys*
+  reverse_proxy @businessApi api:4000
+
+  respond "Not found" 404
+}

@@ -38,6 +38,12 @@ Default URLs:
 - Public AI proxy: `http://localhost:4100/v1`
 - 9router dashboard: `http://localhost:20128/dashboard`
 
+## VPS deployment
+
+Production deployment uses Docker Compose with a pinned 9router npm package version inside an internal container.
+
+See [`docs/vps-deployment.md`](docs/vps-deployment.md).
+
 ## Demo API key
 
 The proxy accepts this demo key from `.env.example`:
