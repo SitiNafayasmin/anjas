@@ -21,6 +21,10 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       WEB_ORIGIN: ${WEB_ORIGIN}
+      AUTH_SESSION_SECRET: ${AUTH_SESSION_SECRET}
+      PAYMENT_GATEWAY_BASE_URL: ${PAYMENT_GATEWAY_BASE_URL}
+      PAYMENT_GATEWAY_API_KEY: ${PAYMENT_GATEWAY_API_KEY}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
@@ -38,8 +42,12 @@ services:
       PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
       ROUTER_BASE_URL: http://9router:20128
       ROUTER_API_KEY: ${ROUTER_API_KEY}
+      DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       DEMO_API_KEY: ${DEMO_API_KEY}
+      WEB_ORIGIN: ${WEB_ORIGIN}
+      PROXY_REQUEST_TIMEOUT_MS: ${PROXY_REQUEST_TIMEOUT_MS:-120000}
+      PROXY_MAX_BODY_BYTES: ${PROXY_MAX_BODY_BYTES:-1048576}
     depends_on:
       redis:
         condition: service_healthy
@@ -101,6 +109,16 @@ services:
     depends_on:
       - web
       - proxy
+
+  smoke:
+    image: curlimages/curl:8.11.1
+    profiles:
+      - smoke
+    depends_on:
+      - web
+      - api
+      - proxy
+    command: ["sh", "-c", "curl -fsS http://api:4000/health && curl -fsS http://proxy:4100/health && curl -fsS http://web:3000 >/dev/null"]
 
 volumes:
   postgres-data:

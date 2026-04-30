@@ -1,10 +1,18 @@
 import type { FastifyRequest } from 'fastify';
+import { createHash } from 'node:crypto';
 
 export type AuthenticatedApiKey = {
   id: string;
   userId: string;
   prefix: string;
-  plan: 'trial' | 'pro';
+  plan: {
+    slug: string;
+    monthlyTokenQuota: bigint;
+    dailyRequestLimit: number;
+    requestsPerMinute: number;
+    maxConcurrentStreams: number;
+    allowedModelAliases: string[];
+  };
 };
 
 export function getBearerToken(request: FastifyRequest): string | null {
@@ -28,6 +36,17 @@ export function authenticateApiKey(
     id: 'demo',
     userId: 'demo-user',
     prefix: 'ak_live_demo',
-    plan: 'trial',
+    plan: {
+      slug: 'trial',
+      monthlyTokenQuota: 100_000n,
+      dailyRequestLimit: 50,
+      requestsPerMinute: 5,
+      maxConcurrentStreams: 1,
+      allowedModelAliases: ['coding-free'],
+    },
   };
+}
+
+export function hashApiKey(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }

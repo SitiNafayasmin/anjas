@@ -20,6 +20,9 @@ export default function HomePage() {
           handles user quotas, model aliases, provider fallback, and usage logs.
         </p>
         <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
+          <a className="button" href="/login">
+            Login
+          </a>
           <a className="button" href="/dashboard">
             Open dashboard shell
           </a>

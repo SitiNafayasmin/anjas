@@ -5,6 +5,7 @@ type ForwardOptions = {
   path: string;
   routerApiKey: string | undefined;
   routerBaseUrl: string;
+  timeoutMs: number;
 };
 
 type ChatBody = {
@@ -27,15 +28,22 @@ function rewriteBody(body: unknown): unknown {
 export async function forwardToRouter(options: ForwardOptions): Promise<Response> {
   const targetUrl = new URL(options.path, options.routerBaseUrl);
   const headers = new Headers();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), options.timeoutMs);
 
   headers.set('content-type', 'application/json');
   if (options.routerApiKey) {
     headers.set('authorization', `Bearer ${options.routerApiKey}`);
   }
 
-  return fetch(targetUrl, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(rewriteBody(options.body)),
-  });
+  try {
+    return await fetch(targetUrl, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+      body: JSON.stringify(rewriteBody(options.body)),
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }

@@ -73,7 +73,7 @@ docker compose --env-file .env -f docker-compose.prod.yml up -d --build
 Run database migrations when migrations are added:
 
 ```bash
-docker compose --env-file .env -f docker-compose.prod.yml exec api npm run db:migrate --workspace @9router-saas/db
+docker compose --env-file .env -f docker-compose.prod.yml exec api npm run db:migrate:deploy --workspace @9router-saas/db
 ```
 
 ## Verify

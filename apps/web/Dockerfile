@@ -23,4 +23,5 @@ COPY --from=builder /app/package-lock.json ./package-lock.json
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/web ./apps/web
 EXPOSE 3000
+USER node
 CMD ["npm", "run", "start", "--workspace", "@9router-saas/web"]

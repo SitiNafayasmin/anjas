@@ -5,6 +5,9 @@ export type ProxyConfig = {
   routerApiKey: string | undefined;
   redisUrl: string;
   demoApiKey: string;
+  corsOrigins: string[];
+  requestTimeoutMs: number;
+  maxBodyBytes: number;
 };
 
 export function loadConfig(): ProxyConfig {
@@ -15,5 +18,8 @@ export function loadConfig(): ProxyConfig {
     routerApiKey: process.env.ROUTER_API_KEY,
     redisUrl: process.env.REDIS_URL ?? 'redis://localhost:6379',
     demoApiKey: process.env.DEMO_API_KEY ?? 'ak_live_demo',
+    corsOrigins: process.env.WEB_ORIGIN?.split(',') ?? ['http://localhost:3000'],
+    requestTimeoutMs: Number(process.env.PROXY_REQUEST_TIMEOUT_MS ?? 120_000),
+    maxBodyBytes: Number(process.env.PROXY_MAX_BODY_BYTES ?? 1_048_576),
   };
 }

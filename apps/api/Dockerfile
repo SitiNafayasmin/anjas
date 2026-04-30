@@ -23,4 +23,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api ./apps/api
 COPY --from=builder /app/packages/db ./packages/db
 EXPOSE 4000
+USER node
 CMD ["npm", "run", "start", "--workspace", "@9router-saas/api"]

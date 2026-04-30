@@ -11,11 +11,28 @@ export default function DashboardPage() {
   return (
     <main className="container">
       <span className="pill">Dashboard shell</span>
-      <h1>API Keys</h1>
+      <h1>Secure API key dashboard</h1>
       <p className="muted">
-        This page will connect to the API service for key generation, revocation,
-        quota, and usage.
+        Backend endpoints now support session auth, database-backed API key
+        generation, revocation, quota, usage logs, and QRIS checkout records.
       </p>
+      <section className="grid" style={{ marginBottom: 20 }}>
+        <div className="card">
+          <strong>Generate key</strong>
+          <pre>{`POST /api-keys
+Authorization: Bearer sess_...`}</pre>
+        </div>
+        <div className="card">
+          <strong>Usage summary</strong>
+          <pre>{`GET /usage/summary
+Authorization: Bearer sess_...`}</pre>
+        </div>
+        <div className="card">
+          <strong>QRIS checkout</strong>
+          <pre>{`POST /payments/checkout
+Authorization: Bearer sess_...`}</pre>
+        </div>
+      </section>
       <section className="card">
         {apiKeys.map((key) => (
           <div

@@ -13,6 +13,14 @@ export function resolveModelAlias(model: string | undefined): string | undefined
   return modelAliases.get(model) ?? model;
 }
 
+export function isPublicModelAlias(model: string | undefined): boolean {
+  if (!model) {
+    return false;
+  }
+
+  return modelAliases.has(model);
+}
+
 export function listModelAliases() {
   return Array.from(modelAliases.keys()).map((id) => ({
     id,
