@@ -37,6 +37,7 @@ services:
       PROXY_PORT: 4100
       PUBLIC_API_BASE_URL: ${PUBLIC_API_BASE_URL}
       ROUTER_BASE_URL: http://9router:20128
+      ROUTER_API_KEY: ${ROUTER_API_KEY}
       REDIS_URL: ${REDIS_URL}
       DEMO_API_KEY: ${DEMO_API_KEY}
     depends_on:

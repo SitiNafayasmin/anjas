@@ -2,8 +2,8 @@ import { resolveModelAlias } from './model-aliases.js';
 
 type ForwardOptions = {
   body: unknown;
-  headers: Record<string, string | undefined>;
   path: string;
+  routerApiKey: string | undefined;
   routerBaseUrl: string;
 };
 
@@ -29,9 +29,8 @@ export async function forwardToRouter(options: ForwardOptions): Promise<Response
   const headers = new Headers();
 
   headers.set('content-type', 'application/json');
-  const authorization = options.headers.authorization;
-  if (authorization) {
-    headers.set('authorization', authorization);
+  if (options.routerApiKey) {
+    headers.set('authorization', `Bearer ${options.routerApiKey}`);
   }
 
   return fetch(targetUrl, {

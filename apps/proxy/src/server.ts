@@ -51,10 +51,8 @@ app.post('/v1/chat/completions', async (request, reply) => {
 
   const upstream = await forwardToRouter({
     body: request.body,
-    headers: {
-      authorization: request.headers.authorization,
-    },
     path: '/v1/chat/completions',
+    routerApiKey: config.routerApiKey,
     routerBaseUrl: config.routerBaseUrl,
   });
 
@@ -81,10 +79,8 @@ app.post('/v1/responses', async (request, reply) => {
 
   const upstream = await forwardToRouter({
     body: request.body,
-    headers: {
-      authorization: request.headers.authorization,
-    },
     path: '/v1/responses',
+    routerApiKey: config.routerApiKey,
     routerBaseUrl: config.routerBaseUrl,
   });
 

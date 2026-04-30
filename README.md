@@ -70,6 +70,8 @@ Initial public aliases:
 
 These are currently mapped in `apps/proxy/src/model-aliases.ts`. Move them into the database-backed `ModelAlias` table when the admin panel is implemented.
 
+Real chat completions require active provider credentials in the 9router dashboard. Without provider credentials, the proxy can authenticate and route the request, but 9router will return an upstream credential/model error.
+
 ## 9router integration
 
 Users should never call 9router directly in production.
@@ -85,6 +87,9 @@ The proxy validates the user API key, applies quota/rate limits, resolves model 
 ```txt
 http://9router:20128/v1
 ```
+
+If 9router is configured to require an internal API key, set `ROUTER_API_KEY`.
+The proxy never forwards the customer's SaaS API key to 9router.
 
 ## Next implementation steps
 

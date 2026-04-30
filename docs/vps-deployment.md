@@ -61,6 +61,7 @@ Set:
 - `POSTGRES_PASSWORD`
 - `DATABASE_URL`
 - `DEMO_API_KEY`
+- `ROUTER_API_KEY` if 9router requires an internal API key
 - `NINE_ROUTER_VERSION`
 
 Start production:
@@ -88,6 +89,8 @@ Open:
 - `https://yourdomain.com`
 - `https://api.yourdomain.com/v1/models`
 
+The `/v1/models` endpoint should work before any upstream provider is connected because it returns SaaS model aliases. A real `/v1/chat/completions` call requires at least one active provider credential configured in 9router.
+
 ## 9router provider setup
 
 9router is internal, but during initial setup you can temporarily expose or tunnel the dashboard only from a trusted connection.
@@ -95,7 +98,7 @@ Open:
 Safer option:
 
 ```bash
-ssh -L 20128:localhost:20128 root@YOUR_VPS_IP
+ssh -L 20128:9router:20128 root@YOUR_VPS_IP
 ```
 
 Then open locally:
@@ -105,6 +108,8 @@ http://localhost:20128/dashboard
 ```
 
 Do not leave the 9router dashboard publicly exposed.
+
+After connecting providers in the 9router dashboard, update the alias mapping in `apps/proxy/src/model-aliases.ts` or move aliases into the database-backed admin panel.
 
 ## Updating 9router
 
