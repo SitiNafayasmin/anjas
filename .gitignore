@@ -10,3 +10,5 @@ coverage
 postgres-data
 redis-data
 .9router-data
+
+*.tsbuildinfo
