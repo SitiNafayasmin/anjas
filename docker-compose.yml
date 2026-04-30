@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: 9router_saas
+      POSTGRES_USER: 9router_saas
+      POSTGRES_PASSWORD: 9router_saas
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U 9router_saas -d 9router_saas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  9router:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install -g 9router && 9router --port 20128 --no-browser --skip-update"
+    ports:
+      - "20128:20128"
+    volumes:
+      - 9router-data:/root/.9router
+    environment:
+      PORT: 20128
+      HOSTNAME: 0.0.0.0
+
+volumes:
+  postgres-data:
+  redis-data:
+  9router-data:
