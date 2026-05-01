@@ -9,6 +9,7 @@ type User = {
   email: string;
   name: string | null;
   role: string;
+  emailVerifiedAt?: string | null;
 };
 
 type ApiKey = {
@@ -34,12 +35,43 @@ type UsageSummary = {
   }[];
 };
 
+type Payment = {
+  id: string;
+  orderId: string;
+  amountTotal: number;
+  status: string;
+  qrisContent: string | null;
+  createdAt: string;
+};
+
+type Subscription = {
+  status: string;
+  currentEnd: string | null;
+  plan: {
+    name: string;
+    slug: string;
+    monthlyPriceIdr: number;
+  };
+};
+
+type AdminOverview = {
+  users: number;
+  activeUsers: number;
+  activeKeys: number;
+  requests24h: number;
+  pendingPayments: number;
+};
+
 export default function DashboardPage() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [usage, setUsage] = useState<UsageSummary | null>(null);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [adminOverview, setAdminOverview] = useState<AdminOverview | null>(null);
   const [keyName, setKeyName] = useState('Default coding key');
+  const [planSlug, setPlanSlug] = useState('pro');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
 
@@ -61,10 +93,12 @@ export default function DashboardPage() {
   }
 
   async function loadDashboard() {
-    const [meResponse, keysResponse, usageResponse] = await Promise.all([
+    const [meResponse, keysResponse, usageResponse, subscriptionResponse, paymentsResponse] = await Promise.all([
       authedFetch('/auth/me'),
       authedFetch('/api-keys'),
       authedFetch('/usage/summary'),
+      authedFetch('/payments/subscription/status'),
+      authedFetch('/payments'),
     ]);
 
     if (!meResponse.ok) {
@@ -76,10 +110,21 @@ export default function DashboardPage() {
     const mePayload = (await meResponse.json()) as { user: User };
     const keysPayload = (await keysResponse.json()) as { apiKeys: ApiKey[] };
     const usagePayload = (await usageResponse.json()) as UsageSummary;
+    const subscriptionPayload = (await subscriptionResponse.json()) as { subscription: Subscription | null };
+    const paymentsPayload = (await paymentsResponse.json()) as { payments: Payment[] };
 
     setUser(mePayload.user);
-    setApiKeys(keysPayload.apiKeys);
+    setApiKeys(keysResponse.ok ? keysPayload.apiKeys : []);
     setUsage(usagePayload);
+    setSubscription(subscriptionPayload.subscription);
+    setPayments(paymentsPayload.payments ?? []);
+
+    if (mePayload.user.role === 'ADMIN') {
+      const adminResponse = await authedFetch('/admin/overview');
+      if (adminResponse.ok) {
+        setAdminOverview((await adminResponse.json()) as AdminOverview);
+      }
+    }
   }
 
   useEffect(() => {
@@ -117,6 +162,27 @@ export default function DashboardPage() {
     await loadDashboard();
   }
 
+  async function resendVerification() {
+    const response = await authedFetch('/auth/resend-verification', { method: 'POST' });
+    setStatus(response.ok ? 'Verification email sent.' : 'Could not send verification email.');
+  }
+
+  async function checkout(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const response = await authedFetch('/payments/checkout', {
+      method: 'POST',
+      body: JSON.stringify({ planSlug }),
+    });
+    setStatus(response.ok ? 'Checkout created. See billing history below.' : 'Checkout failed.');
+    await loadDashboard();
+  }
+
+  async function cancelSubscription() {
+    await authedFetch('/payments/subscription/cancel', { method: 'POST' });
+    setStatus('Subscription canceled.');
+    await loadDashboard();
+  }
+
   function logout() {
     localStorage.removeItem('9router_session_token');
     window.location.href = '/login';
@@ -146,6 +212,14 @@ export default function DashboardPage() {
           <p className="muted">
             {user ? `Logged in as ${user.email}` : 'Loading account...'}
           </p>
+          {user && !user.emailVerifiedAt ? (
+            <p className="auth-status">
+              Email belum verified. Generate API key dan checkout akan dibatasi sampai email diverifikasi.
+              <button className="link-button inline-link" onClick={() => void resendVerification()} type="button">
+                Kirim ulang email
+              </button>
+            </p>
+          ) : null}
         </div>
         <button className="secondary-button" onClick={logout} type="button">
           Logout
@@ -158,6 +232,11 @@ export default function DashboardPage() {
           <strong className="metric">{usage?.monthlyRequests ?? 0}</strong>
         </div>
         <div className="card">
+          <span className="muted">Current plan</span>
+          <strong className="metric">{subscription?.plan.name ?? 'None'}</strong>
+          <p className="muted">{subscription?.status ?? 'No subscription'}</p>
+        </div>
+        <div className="card">
           <span className="muted">Tokens this month</span>
           <strong className="metric">
             {(usage?.monthlyInputTokens ?? 0) + (usage?.monthlyOutputTokens ?? 0)}
@@ -168,6 +247,73 @@ export default function DashboardPage() {
           <strong className="metric">{usage?.requestsLast24h ?? 0}</strong>
         </div>
       </section>
+
+      <section className="dashboard-grid">
+        <form className="card form-card" onSubmit={checkout}>
+          <span className="pill">Billing</span>
+          <h2>Upgrade plan</h2>
+          <label>
+            Plan slug
+            <input
+              onChange={(event: ChangeEvent<HTMLInputElement>) => setPlanSlug(event.target.value)}
+              required
+              type="text"
+              value={planSlug}
+            />
+          </label>
+          <button className="button auth-button" type="submit">
+            Create QRIS checkout
+          </button>
+          <button className="secondary-button" onClick={() => void cancelSubscription()} type="button">
+            Cancel current subscription
+          </button>
+        </form>
+
+        <section className="card">
+          <span className="pill">Payment history</span>
+          <div className="key-list">
+            {payments.length === 0 ? <p className="muted">No payments yet.</p> : null}
+            {payments.map((payment) => (
+              <div className="key-row" key={payment.id}>
+                <div>
+                  <strong>{payment.orderId}</strong>
+                  <p className="muted">Rp{payment.amountTotal.toLocaleString('id-ID')}</p>
+                  {payment.qrisContent ? <small className="muted">QRIS content ready</small> : null}
+                </div>
+                <span className="pill">{payment.status}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </section>
+
+      {user?.role === 'ADMIN' ? (
+        <section className="card">
+          <span className="pill">Admin overview</span>
+          <div className="grid metrics-grid">
+            <div>
+              <span className="muted">Users</span>
+              <strong className="metric">{adminOverview?.users ?? 0}</strong>
+            </div>
+            <div>
+              <span className="muted">Active keys</span>
+              <strong className="metric">{adminOverview?.activeKeys ?? 0}</strong>
+            </div>
+            <div>
+              <span className="muted">Requests 24h</span>
+              <strong className="metric">{adminOverview?.requests24h ?? 0}</strong>
+            </div>
+            <div>
+              <span className="muted">Pending payments</span>
+              <strong className="metric">{adminOverview?.pendingPayments ?? 0}</strong>
+            </div>
+          </div>
+          <p className="muted">
+            Full admin backend tersedia di `/admin/users`, `/admin/plans`, `/admin/model-aliases`,
+            `/admin/providers`, dan `/admin/audit-logs`.
+          </p>
+        </section>
+      ) : null}
 
       <section className="dashboard-grid">
         <form className="card form-card" onSubmit={createKey}>

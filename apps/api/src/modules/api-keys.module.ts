@@ -3,7 +3,7 @@ import { Body, Controller, Delete, Get, Module, Param, Post, Req } from '@nestjs
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { createApiKey } from '../lib/crypto.js';
-import { authenticateSession } from './auth.module.js';
+import { requireVerifiedSession } from './auth.module.js';
 
 const prisma = new PrismaClient();
 
@@ -15,7 +15,7 @@ const createApiKeySchema = z.object({
 class ApiKeysController {
   @Get()
   async listApiKeys(@Req() request: FastifyRequest) {
-    const user = await authenticateSession(request);
+    const user = await requireVerifiedSession(request);
     const apiKeys = await prisma.apiKey.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: 'desc' },
@@ -35,7 +35,7 @@ class ApiKeysController {
 
   @Post()
   async createApiKey(@Req() request: FastifyRequest, @Body() body: unknown) {
-    const user = await authenticateSession(request);
+    const user = await requireVerifiedSession(request);
     const input = createApiKeySchema.parse(body);
     const generated = createApiKey();
     const apiKey = await prisma.apiKey.create({
@@ -62,7 +62,7 @@ class ApiKeysController {
 
   @Get(':id')
   async getApiKey(@Req() request: FastifyRequest, @Param('id') id: string) {
-    const user = await authenticateSession(request);
+    const user = await requireVerifiedSession(request);
     const apiKey = await prisma.apiKey.findFirstOrThrow({
       where: { id, userId: user.id },
       select: {
@@ -81,7 +81,7 @@ class ApiKeysController {
 
   @Delete(':id')
   async revokeApiKey(@Req() request: FastifyRequest, @Param('id') id: string) {
-    const user = await authenticateSession(request);
+    const user = await requireVerifiedSession(request);
     const apiKey = await prisma.apiKey.updateMany({
       where: { id, userId: user.id, status: 'ACTIVE' },
       data: {

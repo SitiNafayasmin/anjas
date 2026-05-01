@@ -6,6 +6,11 @@ export type ApiConfig = {
   paymentGatewayBaseUrl: string;
   paymentGatewayApiKey: string;
   paymentWebhookSecret: string;
+  appPublicUrl: string;
+  brevoApiKey: string;
+  emailFrom: string;
+  emailFromName: string;
+  requestLogRetentionDays: number;
 };
 
 export function loadConfig(): ApiConfig {
@@ -18,5 +23,10 @@ export function loadConfig(): ApiConfig {
       process.env.PAYMENT_GATEWAY_BASE_URL ?? 'https://qris.hubify.store/api',
     paymentGatewayApiKey: process.env.PAYMENT_GATEWAY_API_KEY ?? '',
     paymentWebhookSecret: process.env.PAYMENT_WEBHOOK_SECRET ?? '',
+    appPublicUrl: process.env.APP_PUBLIC_URL ?? 'http://localhost:3000',
+    brevoApiKey: process.env.BREVO_API_KEY ?? '',
+    emailFrom: process.env.EMAIL_FROM ?? 'no-reply@example.com',
+    emailFromName: process.env.EMAIL_FROM_NAME ?? '9router SaaS',
+    requestLogRetentionDays: Number(process.env.REQUEST_LOG_RETENTION_DAYS ?? 90),
   };
 }

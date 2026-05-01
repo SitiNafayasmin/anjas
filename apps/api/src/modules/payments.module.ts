@@ -4,7 +4,7 @@ import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { loadConfig } from '../config.js';
 import { hmacSha256Hex, safeEqual } from '../lib/crypto.js';
-import { authenticateSession } from './auth.module.js';
+import { authenticateSession, requireVerifiedSession } from './auth.module.js';
 
 const prisma = new PrismaClient();
 
@@ -33,6 +33,16 @@ type CreateTransactionResponse = {
     status: string;
   };
   error?: string;
+};
+
+type StatusResponse = {
+  success: boolean;
+  data?: {
+    transaction_id: string;
+    status: string;
+    amount_total: number;
+    paid_at?: string;
+  };
 };
 
 async function createGatewayTransaction(input: {
@@ -66,6 +76,51 @@ async function createGatewayTransaction(input: {
   }
 
   return (await response.json()) as CreateTransactionResponse;
+}
+
+async function checkGatewayStatus(transactionId: string) {
+  const config = loadConfig();
+
+  if (!config.paymentGatewayApiKey) {
+    return null;
+  }
+
+  const response = await fetch(`${config.paymentGatewayBaseUrl}/check-status/${transactionId}`, {
+    headers: {
+      authorization: `Bearer ${config.paymentGatewayApiKey}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Payment status check returned ${response.status}`);
+  }
+
+  return (await response.json()) as StatusResponse;
+}
+
+async function activateSubscription(paymentId: string, paidAt: Date) {
+  const payment = await prisma.paymentTransaction.update({
+    where: { id: paymentId },
+    data: { status: 'PAID', paidAt },
+    include: { plan: true },
+  });
+
+  await prisma.subscription.updateMany({
+    where: { userId: payment.userId, status: { in: ['TRIAL', 'ACTIVE'] } },
+    data: { status: 'CANCELED' },
+  });
+
+  await prisma.subscription.create({
+    data: {
+      userId: payment.userId,
+      planId: payment.planId,
+      status: 'ACTIVE',
+      currentStart: paidAt,
+      currentEnd: new Date(paidAt.getTime() + 30 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  return payment;
 }
 
 function verifyWebhookSignature(
@@ -126,7 +181,7 @@ function verifyWebhookSignature(
 class PaymentsController {
   @Post('checkout')
   async checkout(@Req() request: FastifyRequest, @Body() body: unknown) {
-    const user = await authenticateSession(request);
+    const user = await requireVerifiedSession(request);
     const input = createPaymentSchema.parse(body);
     const plan = await prisma.plan.findUniqueOrThrow({
       where: { slug: input.planSlug },
@@ -177,6 +232,61 @@ class PaymentsController {
     return { payments };
   }
 
+  @Get('subscription/status')
+  async subscriptionStatus(@Req() request: FastifyRequest) {
+    const user = await authenticateSession(request);
+    const subscription = await prisma.subscription.findFirst({
+      where: { userId: user.id, status: { in: ['TRIAL', 'ACTIVE', 'SUSPENDED'] } },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return { subscription };
+  }
+
+  @Post('subscription/cancel')
+  async cancelSubscription(@Req() request: FastifyRequest) {
+    const user = await authenticateSession(request);
+    await prisma.subscription.updateMany({
+      where: { userId: user.id, status: { in: ['TRIAL', 'ACTIVE'] } },
+      data: { status: 'CANCELED' },
+    });
+
+    return { ok: true };
+  }
+
+  @Post(':orderId/reconcile')
+  async reconcile(@Req() request: FastifyRequest, @Param('orderId') orderId: string) {
+    const user = await authenticateSession(request);
+    const payment = await prisma.paymentTransaction.findFirstOrThrow({
+      where: { userId: user.id, orderId },
+    });
+
+    if (!payment.providerTransactionId) {
+      return { payment, gatewayConfigured: false };
+    }
+
+    const status = await checkGatewayStatus(payment.providerTransactionId);
+
+    if (status?.data?.status === 'paid') {
+      const updated = await activateSubscription(
+        payment.id,
+        status.data.paid_at ? new Date(status.data.paid_at) : new Date(),
+      );
+      return { payment: updated, reconciled: true };
+    }
+
+    if (status?.data?.status === 'expired') {
+      const updated = await prisma.paymentTransaction.update({
+        where: { id: payment.id },
+        data: { status: 'EXPIRED' },
+      });
+      return { payment: updated, reconciled: true };
+    }
+
+    return { payment, gatewayStatus: status?.data?.status ?? null, reconciled: false };
+  }
+
   @Get(':orderId')
   async get(@Req() request: FastifyRequest, @Param('orderId') orderId: string) {
     const user = await authenticateSession(request);
@@ -209,30 +319,13 @@ class PaymentWebhookController {
       return { ok: true, ignored: true };
     }
 
-    const payment = await prisma.paymentTransaction.update({
+    const existingPayment = await prisma.paymentTransaction.findUniqueOrThrow({
       where: { orderId: payload.order_id },
-      data: {
-        status: 'PAID',
-        paidAt: payload.completed_at ? new Date(payload.completed_at) : new Date(),
-      },
-      include: { plan: true },
     });
-
-    await prisma.subscription.upsert({
-      where: { id: `sub_${payment.userId}_${payment.planId}` },
-      update: {
-        status: 'ACTIVE',
-        currentStart: new Date(),
-        currentEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-      create: {
-        id: `sub_${payment.userId}_${payment.planId}`,
-        userId: payment.userId,
-        planId: payment.planId,
-        status: 'ACTIVE',
-        currentEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      },
-    });
+    const payment = await activateSubscription(
+      existingPayment.id,
+      payload.completed_at ? new Date(payload.completed_at) : new Date(),
+    );
 
     return {
       ok: true,

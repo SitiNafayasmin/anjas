@@ -1,23 +1,81 @@
 'use client';
 
-import { FormEvent, useMemo, useState, type ChangeEvent } from 'react';
+import { FormEvent, useEffect, useMemo, useState, type ChangeEvent } from 'react';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
 export default function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [status, setStatus] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const title = useMemo(() => (mode === 'login' ? 'Welcome back' : 'Create account'), [mode]);
+  const title = useMemo(() => {
+    if (mode === 'register') return 'Create account';
+    if (mode === 'forgot') return 'Reset password';
+    if (mode === 'reset') return 'Choose new password';
+    return 'Welcome back';
+  }, [mode]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const verifyToken = params.get('verifyToken');
+    const incomingResetToken = params.get('resetToken');
+
+    if (incomingResetToken) {
+      setResetToken(incomingResetToken);
+      setMode('reset');
+      return;
+    }
+
+    if (verifyToken) {
+      void fetch(`${apiBaseUrl}/auth/verify-email?token=${encodeURIComponent(verifyToken)}`)
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error('Email verification failed');
+          }
+          setStatus('Email verified. You can login now.');
+        })
+        .catch((error: unknown) => {
+          setStatus(error instanceof Error ? error.message : 'Email verification failed');
+        });
+    }
+  }, []);
 
   async function submitAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
     setStatus(null);
+
+    if (mode === 'forgot') {
+      const response = await fetch(`${apiBaseUrl}/auth/forgot-password`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setIsLoading(false);
+      setStatus(
+        response.ok
+          ? 'If that email exists, a reset link has been sent.'
+          : 'Could not request password reset.',
+      );
+      return;
+    }
+
+    if (mode === 'reset') {
+      const response = await fetch(`${apiBaseUrl}/auth/reset-password`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: resetToken, password }),
+      });
+      setIsLoading(false);
+      setStatus(response.ok ? 'Password updated. You can login now.' : 'Password reset failed.');
+      if (response.ok) setMode('login');
+      return;
+    }
 
     const response = await fetch(`${apiBaseUrl}/auth/${mode}`, {
       method: 'POST',
@@ -81,9 +139,13 @@ export default function LoginPage() {
             <span className="pill">{mode === 'login' ? 'Sign in' : 'Register'}</span>
             <h2>{title}</h2>
             <p className="muted">
-              {mode === 'login'
-                ? 'Use your account to enter the dashboard.'
-                : 'Create your developer account and start with the trial plan.'}
+              {mode === 'register'
+                ? 'Create your developer account and verify your email.'
+                : mode === 'forgot'
+                  ? 'Enter your email and we will send a Brevo reset email.'
+                  : mode === 'reset'
+                    ? 'Enter the new password for this reset token.'
+                    : 'Use your account to enter the dashboard.'}
             </p>
           </div>
 
@@ -99,33 +161,45 @@ export default function LoginPage() {
             </label>
           ) : null}
 
-          <label>
-            Email
-            <input
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
-              placeholder="you@example.com"
-              required
-              type="email"
-              value={email}
-            />
-          </label>
+          {mode !== 'reset' ? (
+            <label>
+              Email
+              <input
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setEmail(event.target.value)}
+                placeholder="you@example.com"
+                required
+                type="email"
+                value={email}
+              />
+            </label>
+          ) : null}
 
-          <label>
-            Password
-            <input
-              minLength={8}
-              onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
-              placeholder="Minimum 8 characters"
-              required
-              type="password"
-              value={password}
-            />
-          </label>
+          {mode !== 'forgot' ? (
+            <label>
+              Password
+              <input
+                minLength={8}
+                onChange={(event: ChangeEvent<HTMLInputElement>) => setPassword(event.target.value)}
+                placeholder="Minimum 8 characters"
+                required
+                type="password"
+                value={password}
+              />
+            </label>
+          ) : null}
 
           {status ? <p className="auth-status">{status}</p> : null}
 
           <button className="button auth-button" disabled={isLoading} type="submit">
-            {isLoading ? 'Please wait...' : mode === 'login' ? 'Login dashboard' : 'Create account'}
+            {isLoading
+              ? 'Please wait...'
+              : mode === 'register'
+                ? 'Create account'
+                : mode === 'forgot'
+                  ? 'Send reset email'
+                  : mode === 'reset'
+                    ? 'Update password'
+                    : 'Login dashboard'}
           </button>
 
           <div className="auth-divider">
@@ -144,6 +218,19 @@ export default function LoginPage() {
           >
             {mode === 'login' ? 'Create account' : 'Back to login'}
           </button>
+
+          {mode === 'login' ? (
+            <button
+              className="link-button"
+              onClick={() => {
+                setMode('forgot');
+                setStatus(null);
+              }}
+              type="button"
+            >
+              Forgot password?
+            </button>
+          ) : null}
 
           <p className="muted small">
             This form connects to <code>{apiBaseUrl}</code> and stores the session

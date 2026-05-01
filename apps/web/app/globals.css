@@ -190,6 +190,21 @@ pre {
   justify-content: center;
 }
 
+.link-button {
+  background: transparent;
+  border: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+}
+
+.inline-link {
+  display: inline;
+  margin-left: 10px;
+}
+
 .secondary-button {
   background: transparent;
   border: 1px solid rgba(148, 163, 184, 0.28);

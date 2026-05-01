@@ -1,9 +1,21 @@
-import { Body, Controller, Get, Headers, Module, Post, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  Headers,
+  Module,
+  Post,
+  Query,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { hash, verify } from '@node-rs/argon2';
 import { PrismaClient } from '@prisma/client';
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { loadConfig } from '../config.js';
+import { emailButton, sendEmail } from '../lib/email.js';
 import { hmacSha256Hex, randomToken } from '../lib/crypto.js';
 import { getBearerToken } from '../lib/request.js';
 
@@ -17,6 +29,15 @@ const registerSchema = z.object({
 
 const loginSchema = z.object({
   email: z.string().email().max(255),
+  password: z.string().min(8).max(128),
+});
+
+const emailSchema = z.object({
+  email: z.string().email().max(255),
+});
+
+const resetPasswordSchema = z.object({
+  token: z.string().min(20),
   password: z.string().min(8).max(128),
 });
 
@@ -56,6 +77,58 @@ export async function authenticateSession(request: FastifyRequest) {
   return session.user;
 }
 
+export async function requireVerifiedSession(request: FastifyRequest) {
+  const user = await authenticateSession(request);
+
+  if (!user.emailVerifiedAt) {
+    throw new ForbiddenException('Email verification required');
+  }
+
+  return user;
+}
+
+async function sendVerificationEmail(userId: string, email: string) {
+  const config = loadConfig();
+  const token = `verify_${randomToken(32)}`;
+  const url = `${config.appPublicUrl}/login?verifyToken=${encodeURIComponent(token)}`;
+
+  await prisma.verificationToken.create({
+    data: {
+      userId,
+      tokenHash: hmacSha256Hex(config.sessionSecret, token),
+      type: 'EMAIL_VERIFY',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+    },
+  });
+
+  return sendEmail({
+    to: email,
+    subject: 'Verify your 9router SaaS account',
+    html: `<p>Verify your email to secure your 9router SaaS account.</p>${emailButton(url, 'Verify email')}`,
+  });
+}
+
+async function sendPasswordResetEmail(userId: string, email: string) {
+  const config = loadConfig();
+  const token = `reset_${randomToken(32)}`;
+  const url = `${config.appPublicUrl}/login?resetToken=${encodeURIComponent(token)}`;
+
+  await prisma.verificationToken.create({
+    data: {
+      userId,
+      tokenHash: hmacSha256Hex(config.sessionSecret, token),
+      type: 'PASSWORD_RESET',
+      expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+    },
+  });
+
+  return sendEmail({
+    to: email,
+    subject: 'Reset your 9router SaaS password',
+    html: `<p>Use this secure link to reset your password.</p>${emailButton(url, 'Reset password')}`,
+  });
+}
+
 @Controller('auth')
 class AuthController {
   @Post('register')
@@ -88,6 +161,7 @@ class AuthController {
         },
       },
     });
+    await sendVerificationEmail(user.id, user.email);
     const session = await createSession(user.id);
 
     return {
@@ -98,6 +172,7 @@ class AuthController {
         email: user.email,
         name: user.name,
         role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       },
     };
   }
@@ -109,7 +184,7 @@ class AuthController {
       where: { email: input.email.toLowerCase() },
     });
 
-    if (!user?.passwordHash || !(await verify(user.passwordHash, input.password))) {
+    if (!user?.passwordHash || user.status !== 'ACTIVE' || !(await verify(user.passwordHash, input.password))) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -123,6 +198,7 @@ class AuthController {
         email: user.email,
         name: user.name,
         role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       },
     };
   }
@@ -154,8 +230,104 @@ class AuthController {
         email: user.email,
         name: user.name,
         role: user.role,
+        emailVerifiedAt: user.emailVerifiedAt?.toISOString() ?? null,
       },
     };
+  }
+
+  @Post('resend-verification')
+  async resendVerification(@Req() request: FastifyRequest) {
+    const user = await authenticateSession(request);
+
+    if (user.emailVerifiedAt) {
+      return { ok: true, alreadyVerified: true };
+    }
+
+    await sendVerificationEmail(user.id, user.email);
+    return { ok: true };
+  }
+
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string | undefined) {
+    const config = loadConfig();
+
+    if (!token) {
+      throw new UnauthorizedException('Missing verification token');
+    }
+
+    const verificationToken = await prisma.verificationToken.findUnique({
+      where: { tokenHash: hmacSha256Hex(config.sessionSecret, token) },
+    });
+
+    if (
+      !verificationToken ||
+      verificationToken.type !== 'EMAIL_VERIFY' ||
+      verificationToken.usedAt ||
+      verificationToken.expiresAt <= new Date()
+    ) {
+      throw new UnauthorizedException('Invalid verification token');
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: verificationToken.userId },
+        data: { emailVerifiedAt: new Date() },
+      }),
+      prisma.verificationToken.update({
+        where: { id: verificationToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { ok: true };
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() body: unknown) {
+    const input = emailSchema.parse(body);
+    const user = await prisma.user.findUnique({
+      where: { email: input.email.toLowerCase() },
+    });
+
+    if (user) {
+      await sendPasswordResetEmail(user.id, user.email);
+    }
+
+    return { ok: true };
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() body: unknown) {
+    const input = resetPasswordSchema.parse(body);
+    const config = loadConfig();
+    const resetToken = await prisma.verificationToken.findUnique({
+      where: { tokenHash: hmacSha256Hex(config.sessionSecret, input.token) },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.type !== 'PASSWORD_RESET' ||
+      resetToken.usedAt ||
+      resetToken.expiresAt <= new Date()
+    ) {
+      throw new UnauthorizedException('Invalid reset token');
+    }
+
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash: await hash(input.password) },
+      }),
+      prisma.session.deleteMany({
+        where: { userId: resetToken.userId },
+      }),
+      prisma.verificationToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+    ]);
+
+    return { ok: true };
   }
 }
 
