@@ -18,6 +18,7 @@ import { loadConfig } from '../config.js';
 import { emailButton, sendEmail } from '../lib/email.js';
 import { hmacSha256Hex, randomToken } from '../lib/crypto.js';
 import { getBearerToken } from '../lib/request.js';
+import { assertRateLimit, getRequestFingerprint } from '../lib/security.js';
 
 const prisma = new PrismaClient();
 
@@ -132,8 +133,14 @@ async function sendPasswordResetEmail(userId: string, email: string) {
 @Controller('auth')
 class AuthController {
   @Post('register')
-  async register(@Body() body: unknown) {
+  async register(@Req() request: FastifyRequest, @Body() body: unknown) {
     const input = registerSchema.parse(body);
+    const config = loadConfig();
+    assertRateLimit({
+      key: `register:${getRequestFingerprint(request, input.email)}`,
+      limit: config.authRateLimitMaxAttempts,
+      windowSeconds: config.authRateLimitWindowSeconds,
+    });
     const passwordHash = await hash(input.password);
     const user = await prisma.user.create({
       data: {
@@ -178,8 +185,14 @@ class AuthController {
   }
 
   @Post('login')
-  async login(@Body() body: unknown) {
+  async login(@Req() request: FastifyRequest, @Body() body: unknown) {
     const input = loginSchema.parse(body);
+    const config = loadConfig();
+    assertRateLimit({
+      key: `login:${getRequestFingerprint(request, input.email)}`,
+      limit: config.authRateLimitMaxAttempts,
+      windowSeconds: config.authRateLimitWindowSeconds,
+    });
     const user = await prisma.user.findUnique({
       where: { email: input.email.toLowerCase() },
     });
@@ -283,8 +296,14 @@ class AuthController {
   }
 
   @Post('forgot-password')
-  async forgotPassword(@Body() body: unknown) {
+  async forgotPassword(@Req() request: FastifyRequest, @Body() body: unknown) {
     const input = emailSchema.parse(body);
+    const config = loadConfig();
+    assertRateLimit({
+      key: `forgot:${getRequestFingerprint(request, input.email)}`,
+      limit: config.authRateLimitMaxAttempts,
+      windowSeconds: config.authRateLimitWindowSeconds,
+    });
     const user = await prisma.user.findUnique({
       where: { email: input.email.toLowerCase() },
     });

@@ -77,6 +77,72 @@ class AdminController {
     return { users, activeUsers, activeKeys, requests24h, pendingPayments };
   }
 
+  @Get('analytics')
+  async analytics(@Req() request: FastifyRequest) {
+    await requireAdmin(request);
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const [requests, usage, statusGroups, providerGroups, topUsers, payments] = await Promise.all([
+      prisma.requestLog.count({ where: { createdAt: { gte: since } } }),
+      prisma.usageEvent.aggregate({
+        where: { createdAt: { gte: since } },
+        _sum: { inputTokens: true, outputTokens: true, estimatedCost: true },
+        _avg: { latencyMs: true },
+      }),
+      prisma.requestLog.groupBy({
+        by: ['status'],
+        where: { createdAt: { gte: since } },
+        _count: true,
+      }),
+      prisma.usageEvent.groupBy({
+        by: ['provider'],
+        where: { createdAt: { gte: since } },
+        _count: true,
+        _avg: { latencyMs: true },
+      }),
+      prisma.usageEvent.groupBy({
+        by: ['userId'],
+        where: { createdAt: { gte: since } },
+        _count: true,
+        _sum: { inputTokens: true, outputTokens: true },
+        orderBy: { _count: { userId: 'desc' } },
+        take: 10,
+      }),
+      prisma.paymentTransaction.groupBy({
+        by: ['status'],
+        where: { createdAt: { gte: since } },
+        _count: true,
+        _sum: { amountTotal: true },
+      }),
+    ]);
+
+    return {
+      windowDays: 30,
+      totals: {
+        requests,
+        tokens: (usage._sum.inputTokens ?? 0) + (usage._sum.outputTokens ?? 0),
+        estimatedCost: usage._sum.estimatedCost?.toString() ?? '0',
+        averageLatencyMs: Math.round(usage._avg.latencyMs ?? 0),
+      },
+      byStatus: statusGroups.map((group) => ({ status: group.status, count: group._count })),
+      byProvider: providerGroups.map((group) => ({
+        provider: group.provider ?? 'unknown',
+        count: group._count,
+        averageLatencyMs: Math.round(group._avg.latencyMs ?? 0),
+      })),
+      topUsers: topUsers.map((group) => ({
+        userId: group.userId,
+        requests: group._count,
+        tokens: (group._sum.inputTokens ?? 0) + (group._sum.outputTokens ?? 0),
+      })),
+      payments: payments.map((group) => ({
+        status: group.status,
+        count: group._count,
+        amountTotal: group._sum.amountTotal ?? 0,
+      })),
+    };
+  }
+
   @Get('users')
   async users(@Req() request: FastifyRequest) {
     await requireAdmin(request);

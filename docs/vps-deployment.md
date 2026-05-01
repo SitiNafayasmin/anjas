@@ -78,6 +78,13 @@ docker compose --env-file .env -f docker-compose.prod.yml exec api npm run db:se
 docker compose --env-file .env -f docker-compose.prod.yml exec api npm run cleanup --workspace @9router-saas/api
 ```
 
+Backup and monitoring:
+
+```bash
+npm run backup:postgres
+npm run healthcheck:prod
+```
+
 ## Verify
 
 ```bash

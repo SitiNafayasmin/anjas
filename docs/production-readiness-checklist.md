@@ -34,7 +34,9 @@ docker compose --env-file .env -f docker-compose.prod.yml --profile smoke run --
 ## Ops checklist
 
 - Enable automated PostgreSQL backups to external storage.
+- Configure `scripts/backup-postgres.sh` as a daily cron and test `scripts/restore-postgres.sh`.
 - Add uptime monitoring for web, API `/health`, proxy `/health`, and Caddy.
+- Use `scripts/healthcheck-prod.sh` for external smoke checks.
 - Add log retention for `RequestLog` metadata; recommended 30-90 days.
 - Keep prompt/body logging disabled by default.
 - Monitor Redis memory and Postgres disk usage.

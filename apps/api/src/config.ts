@@ -11,6 +11,8 @@ export type ApiConfig = {
   emailFrom: string;
   emailFromName: string;
   requestLogRetentionDays: number;
+  authRateLimitWindowSeconds: number;
+  authRateLimitMaxAttempts: number;
 };
 
 export function loadConfig(): ApiConfig {
@@ -28,5 +30,7 @@ export function loadConfig(): ApiConfig {
     emailFrom: process.env.EMAIL_FROM ?? 'no-reply@example.com',
     emailFromName: process.env.EMAIL_FROM_NAME ?? '9router SaaS',
     requestLogRetentionDays: Number(process.env.REQUEST_LOG_RETENTION_DAYS ?? 90),
+    authRateLimitWindowSeconds: Number(process.env.AUTH_RATE_LIMIT_WINDOW_SECONDS ?? 900),
+    authRateLimitMaxAttempts: Number(process.env.AUTH_RATE_LIMIT_MAX_ATTEMPTS ?? 8),
   };
 }

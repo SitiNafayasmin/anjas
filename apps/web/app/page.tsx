@@ -1,54 +1,86 @@
-const modelAliases = ['coding-free', 'coding-fast', 'coding-smart'];
+const cards = [
+  {
+    badge: 'FREE',
+    title: 'FREE Emergency Fallback',
+    body: 'OpenRouter free models, Gemini, Groq, and other official free-tier providers as a safety net.',
+  },
+  {
+    badge: 'FAST',
+    title: 'Coding Fast Lane',
+    body: 'Alias `coding-fast` routes requests to low-latency providers with quota and fallback control.',
+  },
+  {
+    badge: 'SMART',
+    title: 'Smart Coding Router',
+    body: 'One OpenAI-compatible endpoint for Cursor, Cline, Continue, Codex CLI, and custom tools.',
+  },
+];
 
-const features = [
-  'OpenAI-compatible endpoint for Codex, Cursor, Cline, and other coding tools',
-  'User API key management with quota and rate-limit foundation',
-  'Internal 9router service for model fallback across free and cheap providers',
-  'Usage tracking designed for future billing integration',
+const launchLinks = [
+  ['Docs', '/docs'],
+  ['Status', '/status'],
+  ['Terms', '/terms'],
+  ['Privacy', '/privacy'],
+  ['Refund', '/refund'],
+  ['SLA', '/sla'],
 ];
 
 export default function HomePage() {
   return (
-    <main className="container">
-      <section style={{ padding: '72px 0' }}>
-        <span className="pill">Payment module coming later</span>
-        <h1 style={{ fontSize: 64, lineHeight: 1, marginBottom: 20 }}>
-          Coding API keys backed by smart 9router fallback.
-        </h1>
-        <p className="muted" style={{ fontSize: 20, maxWidth: 720 }}>
-          Sell one API key that works with AI coding tools while your gateway
-          handles user quotas, model aliases, provider fallback, and usage logs.
-        </p>
-        <div style={{ display: 'flex', gap: 12, marginTop: 28 }}>
-          <a className="button" href="/login">
-            Login
-          </a>
-          <a className="button" href="/dashboard">
-            Open dashboard shell
-          </a>
-          <a className="button" href="/docs" style={{ background: '#e2e8f0' }}>
-            View setup docs
-          </a>
-        </div>
-      </section>
-
-      <section className="grid">
-        {features.map((feature) => (
-          <div className="card" key={feature}>
-            <p>{feature}</p>
-          </div>
-        ))}
-      </section>
-
-      <section className="card" style={{ marginTop: 20 }}>
-        <h2>Public model aliases</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-          {modelAliases.map((alias) => (
-            <span className="pill" key={alias}>
-              {alias}
-            </span>
+    <main>
+      <nav className="marketing-nav">
+        <a className="brand-mark" href="/">9R</a>
+        <div>
+          {launchLinks.map(([label, href]) => (
+            <a href={href} key={href}>{label}</a>
           ))}
         </div>
+        <a className="button" href="/login">Get API key</a>
+      </nav>
+
+      <section className="hero-shell">
+        <div>
+          <span className="pill">Managed router + quota + fallback + dashboard</span>
+          <h1>One coding API key. Multiple AI providers. Emergency fallback.</h1>
+          <p className="muted hero-copy">
+            9router SaaS helps developers connect coding tools to a secure OpenAI-compatible gateway
+            with database-backed keys, Redis quota, smart model aliases, and usage analytics.
+          </p>
+          <div className="hero-actions">
+            <a className="button" href="/login">Start beta</a>
+            <a className="secondary-button" href="/docs">Read setup guide</a>
+          </div>
+        </div>
+
+        <div className="reference-card">
+          <div className="icon-box">✪</div>
+          <span className="pill">FREE</span>
+          <h2>FREE Emergency Fallback</h2>
+          <p>iFlow, Qwen, Kiro unlimited. Final safety net ensures you never stop coding.</p>
+        </div>
+      </section>
+
+      <section className="container">
+        <div className="grid">
+          {cards.map((card) => (
+            <article className="feature-card tall" key={card.title}>
+              <div className="icon-box">✦</div>
+              <span className="pill">{card.badge}</span>
+              <h2>{card.title}</h2>
+              <p className="muted">{card.body}</p>
+            </article>
+          ))}
+        </div>
+
+        <section className="card launch-card">
+          <span className="pill">Public launch checklist</span>
+          <h2>Built for beta launch, with ops controls included.</h2>
+          <div className="grid">
+            <p>Auth, email verification, password reset, API key hashing, Redis quota, billing lifecycle.</p>
+            <p>Admin UI, analytics cockpit, monitoring docs, backup script, legal pages, and status page.</p>
+            <p>Provider credentials, Brevo key, payment key, and VPS monitoring must be configured before real public traffic.</p>
+          </div>
+        </section>
       </section>
     </main>
   );

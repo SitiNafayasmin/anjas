@@ -23,7 +23,7 @@
   @proxyApi path /v1/*
   reverse_proxy @proxyApi proxy:4100
 
-  @businessApi path /health /auth/* /plans /api-keys* /usage/* /payments* /webhooks/payment
+  @businessApi path /health /auth/* /plans /api-keys* /usage/* /payments* /webhooks/payment /admin* /workers*
   reverse_proxy @businessApi api:4000
 
   respond "Not found" 404

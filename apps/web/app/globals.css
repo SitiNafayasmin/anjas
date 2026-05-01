@@ -1,10 +1,12 @@
 :root {
   color-scheme: dark;
-  --background: #050816;
+  --background: #05030a;
   --foreground: #f8fafc;
   --muted: #94a3b8;
-  --card: #0f172a;
-  --accent: #38bdf8;
+  --card: #080d18;
+  --accent: #4f8cff;
+  --danger: #ef4444;
+  --border: rgba(255, 255, 255, 0.12);
 }
 
 * {
@@ -13,7 +15,10 @@
 
 body {
   margin: 0;
-  background: radial-gradient(circle at top, #1e293b 0, var(--background) 45%);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(79, 140, 255, 0.18), transparent 32%),
+    radial-gradient(circle at 80% 20%, rgba(239, 68, 68, 0.12), transparent 28%),
+    var(--background);
   color: var(--foreground);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
@@ -33,7 +38,7 @@ a {
 
 .card {
   background: color-mix(in srgb, var(--card) 88%, transparent);
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid var(--border);
   border-radius: 24px;
   padding: 24px;
 }
@@ -65,7 +70,8 @@ pre {
 }
 
 .pill {
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(79, 140, 255, 0.12);
+  border: 1px solid rgba(79, 140, 255, 0.38);
   border-radius: 999px;
   color: var(--accent);
   display: inline-flex;
@@ -80,6 +86,118 @@ pre {
   display: inline-flex;
   font-weight: 700;
   padding: 12px 18px;
+}
+
+.marketing-nav {
+  align-items: center;
+  display: flex;
+  gap: 22px;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px 20px;
+}
+
+.marketing-nav div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.brand-mark,
+.icon-box {
+  align-items: center;
+  background: rgba(79, 140, 255, 0.14);
+  border-radius: 12px;
+  color: #60a5fa;
+  display: inline-flex;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.brand-mark {
+  height: 48px;
+  width: 56px;
+}
+
+.icon-box {
+  font-size: 24px;
+  height: 54px;
+  width: 54px;
+}
+
+.hero-shell {
+  align-items: center;
+  display: grid;
+  gap: 36px;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  margin: 0 auto;
+  max-width: 1180px;
+  min-height: 620px;
+  padding: 56px 20px;
+}
+
+.hero-shell h1,
+.legal-page h1,
+.docs-layout h1,
+.content-shell h1 {
+  font-size: clamp(44px, 6vw, 86px);
+  letter-spacing: -0.075em;
+  line-height: 0.9;
+  margin: 20px 0;
+}
+
+.hero-copy {
+  font-size: 20px;
+  line-height: 1.65;
+  max-width: 760px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.reference-card {
+  background: rgba(5, 8, 18, 0.86);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  border-radius: 20px;
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+  display: grid;
+  gap: 20px;
+  padding: 30px;
+}
+
+.reference-card h2 {
+  font-size: 24px;
+  margin: 0;
+}
+
+.reference-card p {
+  color: #d1d5db;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 18px;
+  line-height: 1.55;
+}
+
+.feature-card {
+  align-items: flex-start;
+  background: rgba(8, 13, 24, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+}
+
+.feature-card.tall {
+  min-height: 240px;
+}
+
+.launch-card {
+  margin-top: 22px;
 }
 
 .muted {
@@ -254,6 +372,48 @@ pre {
   line-height: 0.95;
 }
 
+.app-shell {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.side-nav {
+  align-items: center;
+  background: rgba(2, 6, 23, 0.62);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 20px 12px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.side-nav a:not(.brand-mark) {
+  color: var(--muted);
+  font-size: 13px;
+  writing-mode: vertical-rl;
+}
+
+.side-nav a.active {
+  color: var(--foreground);
+}
+
+.content-shell {
+  margin: 0 auto;
+  max-width: 1240px;
+  padding: 32px 24px;
+  width: 100%;
+}
+
+.metric-card {
+  background:
+    linear-gradient(135deg, rgba(79, 140, 255, 0.12), rgba(8, 13, 24, 0.86)),
+    rgba(8, 13, 24, 0.82);
+}
+
 .metrics-grid {
   margin: 24px 0;
 }
@@ -270,6 +430,10 @@ pre {
   gap: 18px;
   grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
   margin-bottom: 18px;
+}
+
+.wide-left {
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
 }
 
 .form-card {
@@ -297,6 +461,10 @@ pre {
   font: inherit;
   outline: none;
   padding: 14px 16px;
+}
+
+.compact-form {
+  margin: 14px 0;
 }
 
 .secret-box {
@@ -357,6 +525,86 @@ pre {
   padding: 12px 0;
 }
 
+.section-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.data-card {
+  margin-bottom: 18px;
+}
+
+.responsive-table {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 760px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  padding: 14px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+td small {
+  color: var(--muted);
+  display: block;
+  margin-top: 4px;
+}
+
+.table-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.table-actions button {
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--foreground);
+  cursor: pointer;
+  padding: 8px 10px;
+}
+
+.docs-layout {
+  display: grid;
+  gap: 26px;
+  grid-template-columns: 220px minmax(0, 1fr);
+}
+
+.doc-sidebar {
+  align-self: start;
+  background: rgba(8, 13, 24, 0.74);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  position: sticky;
+  top: 24px;
+}
+
+.doc-row {
+  align-items: center;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 12px 0;
+}
+
+.legal-page {
+  max-width: 980px;
+}
+
 @media (max-width: 860px) {
   .auth-panel {
     grid-template-columns: 1fr;
@@ -374,6 +622,23 @@ pre {
 
   .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+
+  .app-shell,
+  .hero-shell,
+  .docs-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .side-nav {
+    flex-direction: row;
+    height: auto;
+    overflow-x: auto;
+    position: static;
+  }
+
+  .side-nav a:not(.brand-mark) {
+    writing-mode: initial;
   }
 
   .log-row {
