@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
+import { AppShell } from '../components/shell';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
@@ -162,21 +163,10 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="app-shell">
-      <aside className="side-nav">
-        <a className="brand-mark" href="/">
-          9R
-        </a>
-        <a href="/dashboard">Dashboard</a>
-        <a href="/analytics">Analytics</a>
-        <a className="active" href="/admin">Admin</a>
-        <a href="/docs">Docs</a>
-      </aside>
-
-      <section className="content-shell">
+    <AppShell active="Admin">
         <div className="dashboard-header">
           <div>
-            <span className="pill">Admin command center</span>
+            <span className="pill">✦ Admin command center</span>
             <h1>User, plan, routing, and ops control.</h1>
             <p className="muted">Kelola user, plan, provider, model alias, audit log, dan cleanup worker.</p>
           </div>
@@ -320,8 +310,7 @@ export default function AdminPage() {
             </div>
           </div>
         </section>
-      </section>
-    </main>
+    </AppShell>
   );
 }
 

@@ -1,3 +1,5 @@
+import { MarketingNav } from '../components/shell';
+
 const tools = [
   ['Base URL', 'https://api.yourdomain.com/v1'],
   ['Model alias', 'coding-fast'],
@@ -13,16 +15,18 @@ const integrations = [
 
 export default function DocsPage() {
   return (
-    <main className="container docs-layout">
-      <aside className="doc-sidebar">
-        <a className="brand-mark" href="/">9R</a>
-        <a href="#quickstart">Quickstart</a>
-        <a href="#tools">Tools</a>
-        <a href="#errors">Errors</a>
-        <a href="/dashboard">Dashboard</a>
-      </aside>
+    <main>
+      <MarketingNav />
+      <section className="container docs-layout">
+        <aside className="doc-sidebar">
+          <a className="logo-lockup compact-logo" href="/"> <span className="logo-cube">◆</span><strong>CodeLink</strong></a>
+          <a href="#quickstart">Quickstart</a>
+          <a href="#tools">Tools</a>
+          <a href="#errors">Errors</a>
+          <a href="/dashboard">Dashboard</a>
+        </aside>
 
-      <section>
+        <section>
         <span className="pill">Setup docs</span>
         <h1>Connect your coding tool in 3 steps.</h1>
         <p className="muted hero-copy">Generate API key, copy base URL, pick a model alias.</p>
@@ -59,6 +63,7 @@ export default function DocsPage() {
             <p><strong>403</strong><br />Email not verified, quota exceeded, or alias not included in plan.</p>
             <p><strong>429</strong><br />Rate limit or concurrent stream limit reached.</p>
           </div>
+        </section>
         </section>
       </section>
     </main>

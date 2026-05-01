@@ -1,6 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useState, type ChangeEvent } from 'react';
+import { AppShell } from '../components/shell';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
@@ -190,7 +191,7 @@ export default function DashboardPage() {
 
   if (!token) {
     return (
-      <main className="container">
+      <main className="container center-page">
         <section className="card narrow">
           <span className="pill">Login required</span>
           <h1>Open your dashboard</h1>
@@ -204,11 +205,11 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="container">
+    <AppShell active="Overview">
       <div className="dashboard-header">
         <div>
-          <span className="pill">Dashboard</span>
-          <h1>Secure API key dashboard</h1>
+          <span className="pill">✦ Overview</span>
+          <h1>Welcome back, Developer! 👋</h1>
           <p className="muted">
             {user ? `Logged in as ${user.email}` : 'Loading account...'}
           </p>
@@ -227,22 +228,22 @@ export default function DashboardPage() {
       </div>
 
       <section className="grid metrics-grid">
-        <div className="card">
+        <div className="card metric-card">
           <span className="muted">Requests this month</span>
           <strong className="metric">{usage?.monthlyRequests ?? 0}</strong>
         </div>
-        <div className="card">
+        <div className="card metric-card">
           <span className="muted">Current plan</span>
           <strong className="metric">{subscription?.plan.name ?? 'None'}</strong>
           <p className="muted">{subscription?.status ?? 'No subscription'}</p>
         </div>
-        <div className="card">
+        <div className="card metric-card">
           <span className="muted">Tokens this month</span>
           <strong className="metric">
             {(usage?.monthlyInputTokens ?? 0) + (usage?.monthlyOutputTokens ?? 0)}
           </strong>
         </div>
-        <div className="card">
+        <div className="card metric-card">
           <span className="muted">Requests last 24h</span>
           <strong className="metric">{usage?.requestsLast24h ?? 0}</strong>
         </div>
@@ -379,6 +380,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </section>
-    </main>
+    </AppShell>
   );
 }

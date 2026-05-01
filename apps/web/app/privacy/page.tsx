@@ -1,3 +1,5 @@
+import { MarketingNav } from '../components/shell';
+
 const items = [
   'We store account email, hashed password, session metadata, API key hashes, usage metadata, payment metadata, and audit logs.',
   'We do not store prompt/code request bodies by default. Request logs are metadata-only for security and debugging.',
@@ -8,11 +10,14 @@ const items = [
 
 export default function PrivacyPage() {
   return (
-    <main className="container legal-page">
-      <span className="pill">Privacy Policy</span>
-      <h1>Privacy-first metadata logging for coding API access.</h1>
-      <section className="card">
-        {items.map((item) => <p key={item}>{item}</p>)}
+    <main>
+      <MarketingNav />
+      <section className="container legal-page">
+        <span className="pill">✦ Privacy Policy</span>
+        <h1>Privacy-first metadata logging for coding API access.</h1>
+        <section className="card legal-card">
+          {items.map((item) => <p key={item}>{item}</p>)}
+        </section>
       </section>
     </main>
   );

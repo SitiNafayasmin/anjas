@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AppShell } from '../components/shell';
 
 const apiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000';
 
@@ -53,19 +54,10 @@ export default function AnalyticsPage() {
   const totalTokens = (analytics?.totals.inputTokens ?? 0) + (analytics?.totals.outputTokens ?? 0);
 
   return (
-    <main className="app-shell">
-      <aside className="side-nav">
-        <a className="brand-mark" href="/">9R</a>
-        <a href="/dashboard">Dashboard</a>
-        <a className="active" href="/analytics">Analytics</a>
-        <a href="/admin">Admin</a>
-        <a href="/docs">Docs</a>
-      </aside>
-
-      <section className="content-shell">
+    <AppShell active="Analytics">
         <div className="dashboard-header">
           <div>
-            <span className="pill">Analytics cockpit</span>
+            <span className="pill">✦ Analytics cockpit</span>
             <h1>Usage, reliability, latency, and cost insight.</h1>
             <p className="muted">Metadata-only analytics. Prompt/code body tidak disimpan default.</p>
           </div>
@@ -119,8 +111,7 @@ export default function AnalyticsPage() {
             </table>
           </div>
         </section>
-      </section>
-    </main>
+    </AppShell>
   );
 }
 

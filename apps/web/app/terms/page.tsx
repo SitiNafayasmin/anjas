@@ -1,3 +1,5 @@
+import { MarketingNav } from '../components/shell';
+
 const terms = [
   'Use the service only with provider accounts, API keys, and usage rights that you are allowed to use.',
   'Do not resell prohibited personal subscriptions or violate upstream provider terms.',
@@ -8,11 +10,14 @@ const terms = [
 
 export default function TermsPage() {
   return (
-    <main className="container legal-page">
-      <span className="pill">Terms of Service</span>
-      <h1>Developer API terms for safe public launch.</h1>
-      <section className="card">
-        {terms.map((term) => <p key={term}>{term}</p>)}
+    <main>
+      <MarketingNav />
+      <section className="container legal-page">
+        <span className="pill">✦ Terms of Service</span>
+        <h1>Developer API terms for safe public launch.</h1>
+        <section className="card legal-card">
+          {terms.map((term) => <p key={term}>{term}</p>)}
+        </section>
       </section>
     </main>
   );

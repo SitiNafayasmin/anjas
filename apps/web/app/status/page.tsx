@@ -1,3 +1,5 @@
+import { MarketingNav } from '../components/shell';
+
 const services = [
   ['Web dashboard', 'Operational'],
   ['Business API', 'Operational'],
@@ -9,18 +11,21 @@ const services = [
 
 export default function StatusPage() {
   return (
-    <main className="container legal-page">
-      <span className="pill">Status</span>
-      <h1>Service health and launch dependencies.</h1>
-      <section className="card">
-        <div className="key-list">
-          {services.map(([name, status]) => (
-            <div className="key-row" key={name}>
-              <strong>{name}</strong>
-              <span className="pill">{status}</span>
-            </div>
-          ))}
-        </div>
+    <main>
+      <MarketingNav />
+      <section className="container legal-page">
+        <span className="pill">✦ Status</span>
+        <h1>Service health and launch dependencies.</h1>
+        <section className="card">
+          <div className="key-list">
+            {services.map(([name, status]) => (
+              <div className="key-row" key={name}>
+                <strong>{name}</strong>
+                <span className="pill">{status}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </section>
     </main>
   );
